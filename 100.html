@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CAF 귀농 정착 프로젝트 대시보드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            height: 300px; 
+            max-height: 400px; 
+        }
+        @media (min-width: 768px) { .chart-container { height: 350px; } }
+        .nav-item.active { border-bottom: 2px solid #16a34a; color: #16a34a; font-weight: 700; }
+        .card-hover { transition: transform 0.2s, box-shadow 0.2s; }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        .step-connector { flex-grow: 1; height: 2px; background-color: #cbd5e1; }
+        .step-active .step-circle { background-color: #16a34a; color: white; border-color: #16a34a; }
+        .step-active .step-connector { background-color: #16a34a; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+    <!-- Chosen Palette: Warm Neutrals (Background) + Nature Green (Primary) + Professional Blue (Secondary) -->
+    <!-- Application Structure Plan:
+        1. Hero Section: Immediate hook with key project goals.
+        2. Problem Analysis: Visualizing the "why" (price volatility, failure rates) to justify the project.
+        3. Solution & Governance: Interactive diagram explaining the coop-CAF-gov relationship and profit flow.
+        4. Technology & Differentiation: Comparative charts showing HybridCA advantages over traditional storage.
+        5. Roadmap & Budget: Timeline and funding structure visualization.
+        6. Impact Simulator: Interactive calculator to estimate benefits for farmers (engagement).
+        Flow: Linear storytelling from "Problem" to "Solution" to "Impact", with a sticky nav for jumping.
+    -->
+    <!-- Visualization & Content Choices:
+        - Price Volatility (Line Chart): To starkly contrast harvest-time lows vs. storage-enabled stability.
+        - Stakeholder Roles (Interactive Cards): To clarify the complex governance structure without overwhelming text.
+        - Tech Comparison (Radar/Bar Chart): To highlight HybridCA's superiority in multiple dimensions (storage time, quality, etc.).
+        - Budget Structure (Doughnut Chart): To show the public-private partnership balance.
+        - Simulation (Input/Output): To make the abstract benefits personal and concrete for a potential user (farmer).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+</head>
+<body class="bg-stone-50 text-slate-800">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 bg-white/95 backdrop-blur shadow-sm border-b border-gray-100">
+        <div class="container mx-auto px-4 max-w-6xl">
+            <div class="flex justify-between items-center h-16">
+                <div class="font-bold text-xl text-green-700 tracking-tight">CAF Project</div>
+                <div class="hidden md:flex space-x-8 text-sm font-medium" id="nav-links">
+                    <a href="#home" class="nav-item cursor-pointer py-5 hover:text-green-600 transition-colors" data-target="home">홈</a>
+                    <a href="#problem" class="nav-item cursor-pointer py-5 hover:text-green-600 transition-colors" data-target="problem">배경 및 필요성</a>
+                    <a href="#solution" class="nav-item cursor-pointer py-5 hover:text-green-600 transition-colors" data-target="solution">사업 모델</a>
+                    <a href="#tech" class="nav-item cursor-pointer py-5 hover:text-green-600 transition-colors" data-target="tech">핵심 기술</a>
+                    <a href="#roadmap" class="nav-item cursor-pointer py-5 hover:text-green-600 transition-colors" data-target="roadmap">추진 계획</a>
+                </div>
+                <!-- Mobile Menu Button (simplified interaction) -->
+                <button id="mobile-menu-btn" class="md:hidden text-gray-600 focus:outline-none text-2xl">
+                    &#9776;
+                </button>
+            </div>
+            <!-- Mobile Menu Dropdown -->
+            <div id="mobile-menu" class="hidden md:hidden pb-4 bg-white border-t border-gray-100 absolute w-full left-0 shadow-lg">
+                <div class="flex flex-col px-4 space-y-2 mt-2">
+                    <a href="#home" class="mobile-nav-item py-2 block text-gray-600" onclick="toggleMobileMenu()">홈</a>
+                    <a href="#problem" class="mobile-nav-item py-2 block text-gray-600" onclick="toggleMobileMenu()">배경 및 필요성</a>
+                    <a href="#solution" class="mobile-nav-item py-2 block text-gray-600" onclick="toggleMobileMenu()">사업 모델</a>
+                    <a href="#tech" class="mobile-nav-item py-2 block text-gray-600" onclick="toggleMobileMenu()">핵심 기술</a>
+                    <a href="#roadmap" class="mobile-nav-item py-2 block text-gray-600" onclick="toggleMobileMenu()">추진 계획</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 max-w-6xl space-y-20">
+
+        <!-- 1. HERO SECTION -->
+        <section id="home" class="text-center py-12 md:py-20 bg-gradient-to-br from-green-50 to-stone-100 rounded-3xl shadow-sm border border-green-100">
+            <div class="max-w-3xl mx-auto px-4">
+                <span class="inline-block py-1 px-3 rounded-full bg-green-100 text-green-700 text-sm font-semibold mb-4">지속가능한 귀농 솔루션</span>
+                <h1 class="text-2xl md:text-4xl font-bold mb-6 text-gray-900 leading-tight">CAF HybridCA 수익형 창고 기반<br><span class="text-green-600">귀농 정착 프로젝트</span></h1>
+                <p class="text-lg text-gray-600 mb-10 leading-relaxed">
+                    단순한 지원을 넘어선 구조적 혁신. 귀농인이 주인인 <strong>수익형 저장창고</strong>와 
+                    CAF의 <strong>전문 위탁운영</strong>이 만나 안정적 소득과 지역 농업의 미래를 만듭니다.
+                </p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div class="text-2xl font-bold text-green-600">안정 소득</div>
+                        <div class="text-sm text-gray-500">귀농인 기반 확보</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div class="text-2xl font-bold text-blue-600">가격 안정</div>
+                        <div class="text-sm text-gray-500">산지 유통 강화</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div class="text-2xl font-bold text-orange-500">일자리</div>
+                        <div class="text-sm text-gray-500">지역 인구 유입</div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                        <div class="text-2xl font-bold text-purple-600">6차 산업</div>
+                        <div class="text-sm text-gray-500">저장·가공·유통</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. PROBLEM & NECESSITY -->
+        <section id="problem" class="scroll-mt-24">
+            <div class="mb-8 border-l-4 border-red-400 pl-4">
+                <h2 class="text-2xl font-bold text-gray-800">사업의 필요성: 왜 지금 필요한가?</h2>
+                <p class="text-gray-600 mt-2">
+                    기존 귀농 정책의 구조적 한계와 산지 농산물의 가격 불안정성을 해결하기 위한 인프라가 필요합니다.
+                    단순한 초기 지원금만으로는 '지속 가능한 정착'을 보장할 수 없습니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+                <!-- Chart: Price Instability -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 card-hover">
+                    <h3 class="text-lg font-bold mb-4 flex items-center">
+                        <span class="mr-2">📉</span> 산지 농산물 가격 불안정 현황
+                    </h3>
+                    <div class="chart-container">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4 text-center bg-gray-50 p-2 rounded">
+                        수확기 홍수 출하 시 가격이 급락하며, 저장 시설 부족으로 헐값에 넘길 수밖에 없는 구조적 악순환 발생
+                    </p>
+                </div>
+
+                <!-- Text/Cards: Structural Limits -->
+                <div class="flex flex-col space-y-4">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-full">
+                        <h3 class="text-lg font-bold mb-4 text-red-600">현행 귀농 정책의 한계</h3>
+                        <ul class="space-y-4">
+                            <li class="flex items-start">
+                                <span class="bg-red-100 text-red-600 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-1 text-xs">!</span>
+                                <div>
+                                    <strong class="block text-gray-800">높은 정착 실패율</strong>
+                                    <span class="text-sm text-gray-600">귀농 인구는 증가하지만 판로 부재와 소득 불안정으로 인해 역귀농 발생</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="bg-red-100 text-red-600 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-1 text-xs">!</span>
+                                <div>
+                                    <strong class="block text-gray-800">단기 지원 중심</strong>
+                                    <span class="text-sm text-gray-600">초기 정착금 지원에 집중되어 있어, 장기적인 수익 창출 모델 부재</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="bg-red-100 text-red-600 rounded-full w-6 h-6 flex items-center justify-center mr-3 mt-1 text-xs">!</span>
+                                <div>
+                                    <strong class="block text-gray-800">인프라 부족</strong>
+                                    <span class="text-sm text-gray-600">개별 농가 단위로는 저장/가공 시설을 갖추기 어려워 시장 대응력 부족</span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. SOLUTION & BUSINESS MODEL -->
+        <section id="solution" class="scroll-mt-24">
+            <div class="mb-8 border-l-4 border-green-500 pl-4">
+                <h2 class="text-2xl font-bold text-gray-800">사업 추진 체계 및 모델</h2>
+                <p class="text-gray-600 mt-2">
+                    귀농 영농조합이 소유하고, 전문 기업 CAF가 운영하여 수익을 극대화하는 민·관·공 협력 모델입니다.
+                </p>
+            </div>
+
+            <!-- Interactive Governance Selector -->
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div class="bg-gray-50 border-b border-gray-100 p-4 flex flex-wrap gap-2 justify-center" id="role-tabs">
+                    <button onclick="updateRole('coop')" class="role-btn px-4 py-2 rounded-full text-sm font-semibold transition-colors bg-green-600 text-white shadow-md" data-role="coop">귀농 영농조합</button>
+                    <button onclick="updateRole('caf')" class="role-btn px-4 py-2 rounded-full text-sm font-semibold transition-colors bg-white text-gray-600 hover:bg-gray-100" data-role="caf">농업회사법인 CAF</button>
+                    <button onclick="updateRole('gov')" class="role-btn px-4 py-2 rounded-full text-sm font-semibold transition-colors bg-white text-gray-600 hover:bg-gray-100" data-role="gov">정부/지자체</button>
+                </div>
+                
+                <div class="p-8 text-center md:text-left min-h-[250px] flex items-center justify-center md:justify-start">
+                    <div id="role-content" class="w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                        <!-- Dynamic Content Inserted via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Flow Diagram (CSS Grid) -->
+            <div class="mt-8">
+                <h3 class="text-lg font-bold mb-6 text-center">수익 창출 프로세스</h3>
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-center text-sm">
+                    <div class="p-4 bg-green-50 rounded-lg border border-green-100 flex flex-col justify-center items-center h-32 card-hover">
+                        <div class="text-2xl mb-2">🧑‍🌾</div>
+                        <div class="font-bold">귀농 조합</div>
+                        <div class="text-xs text-gray-500 mt-1">창고 소유<br>계약 재배</div>
+                    </div>
+                    <div class="hidden md:flex items-center justify-center text-gray-300 text-2xl">➡</div>
+                    <div class="md:hidden flex justify-center text-gray-300 py-2">⬇</div>
+                    
+                    <div class="p-4 bg-blue-50 rounded-lg border border-blue-100 flex flex-col justify-center items-center h-32 card-hover">
+                        <div class="text-2xl mb-2">🏭</div>
+                        <div class="font-bold">CAF 운영</div>
+                        <div class="text-xs text-gray-500 mt-1">HybridCA 저장<br>위탁 관리</div>
+                    </div>
+                    <div class="hidden md:flex items-center justify-center text-gray-300 text-2xl">➡</div>
+                    <div class="md:hidden flex justify-center text-gray-300 py-2">⬇</div>
+
+                    <div class="p-4 bg-orange-50 rounded-lg border border-orange-100 flex flex-col justify-center items-center h-32 card-hover">
+                        <div class="text-2xl mb-2">🚛</div>
+                        <div class="font-bold">가공/유통</div>
+                        <div class="text-xs text-gray-500 mt-1">가격상승 시 출하<br>가공품 생산</div>
+                    </div>
+                </div>
+                <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center text-yellow-800 font-medium text-sm">
+                    💰 수익 환원: 임대료 + 저장·유통 수익 + 가공 수익 ➔ 귀농인 안정 정착 자금
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. CORE TECHNOLOGY -->
+        <section id="tech" class="scroll-mt-24">
+            <div class="mb-8 border-l-4 border-blue-500 pl-4">
+                <h2 class="text-2xl font-bold text-gray-800">핵심 기술 및 차별성</h2>
+                <p class="text-gray-600 mt-2">
+                    단순 보관을 넘어선 수익 창출 도구, CAF HybridCA 장기비축 기술이 핵심입니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Comparison Chart -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 card-hover">
+                    <h3 class="text-lg font-bold mb-4">기존 저장시설 vs CAF 모델</h3>
+                    <div class="chart-container">
+                        <canvas id="techChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Text Comparison Table -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold mb-4">차별화 포인트</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 text-gray-600 font-bold border-b border-gray-200">
+                                <tr>
+                                    <th class="p-3">구분</th>
+                                    <th class="p-3">기존 저장시설</th>
+                                    <th class="p-3 text-green-700">본 사업 (CAF)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <tr>
+                                    <td class="p-3 font-semibold">목적</td>
+                                    <td class="p-3 text-gray-500">단순 보관</td>
+                                    <td class="p-3 font-medium text-green-700">가격안정 + 수익창출</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold">운영주체</td>
+                                    <td class="p-3 text-gray-500">농가 개별 (비전문)</td>
+                                    <td class="p-3 font-medium text-green-700">CAF 전문운영</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold">판로</td>
+                                    <td class="p-3 text-gray-500">연계 미흡</td>
+                                    <td class="p-3 font-medium text-green-700">가공·유통·김치공장</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3 font-semibold">지속성</td>
+                                    <td class="p-3 text-gray-500">보조금 의존</td>
+                                    <td class="p-3 font-medium text-green-700">자립형 수익 구조</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-4 text-xs text-gray-500">
+                        * HybridCA: 농산물 품질 저하 없이 장기 저장하며 출하 시기를 능동적으로 조절 가능한 특허 기술
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. ROADMAP & BUDGET -->
+        <section id="roadmap" class="scroll-mt-24">
+            <div class="mb-8 border-l-4 border-purple-500 pl-4">
+                <h2 class="text-2xl font-bold text-gray-800">추진 일정 및 예산</h2>
+                <p class="text-gray-600 mt-2">
+                    체계적인 5단계 추진 전략과 합리적인 예산 분담 구조를 가지고 있습니다.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <!-- Timeline -->
+                <div class="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-bold mb-6">사업 추진 로드맵</h3>
+                    <div class="space-y-6 relative">
+                        <!-- Line -->
+                        <div class="absolute left-4 top-2 bottom-2 w-0.5 bg-gray-200"></div>
+                        
+                        <!-- Step 1 -->
+                        <div class="relative pl-10">
+                            <div class="absolute left-2 top-1.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow"></div>
+                            <h4 class="font-bold text-gray-800">1단계: 귀농조합 구성 (1개월)</h4>
+                            <p class="text-sm text-gray-500">귀농인 모집 및 영농조합 법인 설립</p>
+                        </div>
+                        <!-- Step 2 -->
+                        <div class="relative pl-10">
+                            <div class="absolute left-2 top-1.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white shadow"></div>
+                            <h4 class="font-bold text-gray-800">2단계: CAF 위탁운영 계약 (1개월)</h4>
+                            <p class="text-sm text-gray-500">전문 운영을 위한 파트너십 체결</p>
+                        </div>
+                        <!-- Step 3 -->
+                        <div class="relative pl-10">
+                            <div class="absolute left-2 top-1.5 w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow"></div>
+                            <h4 class="font-bold text-gray-800">3단계: 보조금 사업 신청 (2~3개월)</h4>
+                            <p class="text-sm text-gray-500">국·도비 지원 사업 제안 및 선정</p>
+                        </div>
+                        <!-- Step 4 -->
+                        <div class="relative pl-10">
+                            <div class="absolute left-2 top-1.5 w-4 h-4 bg-gray-300 rounded-full border-2 border-white shadow"></div>
+                            <h4 class="font-bold text-gray-800">4단계: 창고 구축 (6개월)</h4>
+                            <p class="text-sm text-gray-500">수익형 저장창고 설계 및 시공</p>
+                        </div>
+                        <!-- Step 5 -->
+                        <div class="relative pl-10">
+                            <div class="absolute left-2 top-1.5 w-4 h-4 bg-gray-300 rounded-full border-2 border-white shadow"></div>
+                            <h4 class="font-bold text-gray-800">5단계: 운영 및 수익 창출 (연중)</h4>
+                            <p class="text-sm text-gray-500">저장, 유통, 배당 실행</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budget Chart -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center">
+                    <h3 class="text-lg font-bold mb-4">사업비 분담 구조</h3>
+                    <div class="chart-container" style="height: 250px;">
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                    <p class="text-xs text-center text-gray-500 mt-4">
+                        * 보조금은 인프라 구축(Hardware)에 집중,<br>운영·기술(Software)은 민간(CAF)이 책임
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. EXPECTED EFFECT SIMULATOR (Engagement) -->
+        <section id="simulation" class="scroll-mt-24 mb-20">
+            <div class="bg-green-900 rounded-3xl p-8 md:p-12 text-white text-center shadow-lg">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4">기대 효과 시뮬레이션</h2>
+                <p class="text-green-100 mb-8 max-w-2xl mx-auto">
+                    이 사업을 통해 지역과 귀농인이 얻을 수 있는 변화를 확인해보세요.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-4xl mx-auto">
+                    <div class="bg-white/10 backdrop-blur p-6 rounded-xl border border-white/20">
+                        <div class="text-3xl mb-2">🏠</div>
+                        <h4 class="text-lg font-bold mb-2">귀농 정착률</h4>
+                        <p class="text-sm text-green-100 mb-3">안정적 소득 기반으로 폐농 방지</p>
+                        <div class="w-full bg-green-800 rounded-full h-2">
+                            <div class="bg-green-400 h-2 rounded-full" style="width: 85%"></div>
+                        </div>
+                        <div class="text-right text-xs mt-1 text-green-300">목표: 85% 이상</div>
+                    </div>
+
+                    <div class="bg-white/10 backdrop-blur p-6 rounded-xl border border-white/20">
+                        <div class="text-3xl mb-2">💵</div>
+                        <h4 class="text-lg font-bold mb-2">농가 소득</h4>
+                        <p class="text-sm text-green-100 mb-3">계약재배 + 운영 배당금 추가 소득</p>
+                        <div class="w-full bg-green-800 rounded-full h-2">
+                            <div class="bg-green-400 h-2 rounded-full" style="width: 120%"></div>
+                        </div>
+                        <div class="text-right text-xs mt-1 text-green-300">기존 대비 20%↑ 예상</div>
+                    </div>
+
+                    <div class="bg-white/10 backdrop-blur p-6 rounded-xl border border-white/20">
+                        <div class="text-3xl mb-2">⚖️</div>
+                        <h4 class="text-lg font-bold mb-2">가격 안정화</h4>
+                        <p class="text-sm text-green-100 mb-3">출하 시기 조절로 수급 균형</p>
+                        <div class="w-full bg-green-800 rounded-full h-2">
+                            <div class="bg-green-400 h-2 rounded-full" style="width: 90%"></div>
+                        </div>
+                        <div class="text-right text-xs mt-1 text-green-300">변동폭 최소화</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 py-12">
+        <div class="container mx-auto px-4 text-center text-gray-500 text-sm">
+            <p class="mb-2 font-bold text-gray-700">농업회사법인 CAF 주식회사/ 귀농 영농조합(가칭)</p>
+            <p>Copyright 2025. Agricultural Corporation CAF INC. All rights reserved.</p>
+            <div class="mt-8">
+                <button onclick="history.back()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">
+                    종료하고 돌아가기
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. DATA & STATE MANAGEMENT ---
+        const appData = {
+            roles: {
+                coop: {
+                    title: "귀농 영농조합",
+                    icon: "👩‍🌾",
+                    desc: "귀농인들이 주축이 되어 설립한 조직으로, 창고의 실질적인 주인입니다.",
+                    tasks: ["수익형 저장창고 공동 소유", "귀농인 조직화 및 관리", "안정적인 계약재배 수행"]
+                },
+                caf: {
+                    title: "농업회사법인 CAF 주식회사",
+                    icon: "🏢",
+                    desc: "저장 기술과 유통망을 보유한 전문 운영 파트너입니다.",
+                    tasks: ["창고 위탁운영 (전문성)", "HybridCA 기술 적용 및 관리", "가공·유통 판로 확보"]
+                },
+                gov: {
+                    title: "지자체 / 정부",
+                    icon: "🏛️",
+                    desc: "사업의 기반을 조성하고 정책적으로 지원하는 후원자입니다.",
+                    tasks: ["부지·행정 지원 및 보조금 연계", "인프라 구축 예산 지원", "정책 성과 및 귀농 현황 관리"]
+                }
+            }
+        };
+
+        // --- 2. CHART INITIALIZATION ---
+        document.addEventListener('DOMContentLoaded', function() {
+            initPriceChart();
+            initTechChart();
+            initBudgetChart();
+            updateRole('coop'); // Init role view
+            setupMobileMenu();
+            setupScrollSpy();
+        });
+
+        // Chart 1: Price Volatility (Line)
+        function initPriceChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['수확기(10월)', '11월', '12월', '1월', '2월', '3월(단경기)'],
+                    datasets: [
+                        {
+                            label: '일반 출하 (홍수 출하)',
+                            data: [100, 95, 110, 120, 130, 150],
+                            borderColor: '#ef4444', // Red
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            borderDash: [5, 5],
+                            tension: 0.4,
+                            fill: false
+                        },
+                        {
+                            label: 'CAF 저장 시스템 (시기 조절)',
+                            data: [null, null, 130, 145, 160, 180], // Starts selling later
+                            borderColor: '#16a34a', // Green
+                            backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                            pointRadius: 6,
+                            tension: 0.4,
+                            spanGaps: true // Connects even with nulls if needed, but here we want to show delayed entry
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) { label += ': '; }
+                                    if (context.parsed.y !== null) {
+                                        label += '가격 지수 ' + context.parsed.y;
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 80,
+                            title: { display: true, text: '가격 지수 (평시=100)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chart 2: Tech Comparison (Radar/Bar) - Using Bar for clarity on mobile
+        function initTechChart() {
+            const ctx = document.getElementById('techChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['저장 기간', '품질 유지', '가격 결정권', '수익성', '운영 전문성'],
+                    datasets: [
+                        {
+                            label: '기존 저장고',
+                            data: [40, 50, 20, 30, 20],
+                            backgroundColor: '#cbd5e1', // Gray
+                        },
+                        {
+                            label: 'CAF HybridCA',
+                            data: [95, 90, 85, 90, 95],
+                            backgroundColor: '#16a34a', // Green
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            display: false // Hide numbers for cleaner look, represent as score
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Chart 3: Budget Distribution (Doughnut)
+        function initBudgetChart() {
+            const ctx = document.getElementById('budgetChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['국·도비 (인프라)', '지자체 (인프라)', '자부담 (조합)', 'CAF (운영/기술)'],
+                    datasets: [{
+                        data: [40, 30, 20, 10], // Dummy percent based on typical subsidy structures
+                        backgroundColor: [
+                            '#3b82f6', // Blue
+                            '#60a5fa', // Light Blue
+                            '#fbbf24', // Yellow
+                            '#16a34a'  // Green (CAF)
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { boxWidth: 12, padding: 15 } }
+                    }
+                }
+            });
+        }
+
+        // --- 3. INTERACTION LOGIC ---
+
+        // Role Selector Logic
+        function updateRole(roleKey) {
+            // Update Buttons
+            document.querySelectorAll('.role-btn').forEach(btn => {
+                if(btn.dataset.role === roleKey) {
+                    btn.classList.remove('bg-white', 'text-gray-600', 'hover:bg-gray-100');
+                    btn.classList.add('bg-green-600', 'text-white', 'shadow-md');
+                } else {
+                    btn.classList.add('bg-white', 'text-gray-600', 'hover:bg-gray-100');
+                    btn.classList.remove('bg-green-600', 'text-white', 'shadow-md');
+                }
+            });
+
+            // Update Content
+            const data = appData.roles[roleKey];
+            const contentDiv = document.getElementById('role-content');
+            
+            // Generate List Items
+            const listItems = data.tasks.map(task => 
+                `<li class="flex items-center mb-2"><span class="text-green-500 mr-2">✔</span>${task}</li>`
+            ).join('');
+
+            contentDiv.innerHTML = `
+                <div class="flex flex-col items-center md:items-start fade-in">
+                    <div class="text-6xl mb-4 bg-gray-100 rounded-full w-24 h-24 flex items-center justify-center">${data.icon}</div>
+                    <h3 class="text-2xl font-bold text-gray-800">${data.title}</h3>
+                    <p class="text-gray-500 mt-2 mb-4 leading-relaxed">${data.desc}</p>
+                </div>
+                <div class="bg-gray-50 p-6 rounded-xl border border-gray-100 fade-in h-full">
+                    <h4 class="font-bold text-gray-700 mb-3 border-b border-gray-200 pb-2">주요 역할</h4>
+                    <ul class="text-sm text-gray-600 space-y-2">
+                        ${listItems}
+                    </ul>
+                </div>
+            `;
+        }
+
+        // Mobile Menu
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function setupMobileMenu() {
+            document.getElementById('mobile-menu-btn').addEventListener('click', toggleMobileMenu);
+        }
+
+        // Scroll Spy & Smooth Scroll
+        function setupScrollSpy() {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-item');
+
+            window.addEventListener('scroll', () => {
+                let current = '';
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.clientHeight;
+                    if (scrollY >= (sectionTop - 150)) {
+                        current = section.getAttribute('id');
+                    }
+                });
+
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                    if (link.dataset.target === current) {
+                        link.classList.add('active');
+                    }
+                });
+            });
+        }
+    </script>
+    <script>
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                history.back();
+            }
+        });
+    </script>
+</body>
+</html>
