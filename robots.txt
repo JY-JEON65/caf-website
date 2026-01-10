@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://jy-jeon65.github.io/caf-website/sitemap.xml
